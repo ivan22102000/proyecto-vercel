@@ -4,25 +4,13 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
 
-// ¡IMPORTANTE! Reemplaza esto con tu URL de GitHub Pages
-const GITHUB_PAGES_URL = "https://tu-usuario.github.io"; // <-- ¡EDITAR ESTO!
-
 // Crea el cliente de Supabase usando la Service Role Key
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 export default async function handler(req, res) {
-    // --- Configuración de CORS ---
-    // Solo permite peticiones desde tu frontend de GitHub Pages
-    res.setHeader('Access-Control-Allow-Origin', GITHUB_PAGES_URL);
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    
+    // --- Lógica de la API (Sin CORS) ---
 
-    // Maneja peticiones OPTIONS (pre-flight)
-    if (req.method === 'OPTIONS') {
-        return res.status(200).send('OK');
-    }
-
-    // --- Lógica de la API ---
     // 1. Asegurar que sea un método POST
     if (req.method !== 'POST') {
         res.setHeader('Allow', ['POST']);
