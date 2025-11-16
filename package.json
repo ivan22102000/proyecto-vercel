@@ -1,0 +1,12 @@
+{
+  "name": "supabase-backend",
+  "version": "1.0.0",
+  "description": "Backend seguro para Supabase",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.0.0"
+  }
+}
